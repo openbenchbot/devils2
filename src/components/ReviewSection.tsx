@@ -171,10 +171,10 @@ export function ReviewSection({ productId, reviews: initialReviews }: ReviewSect
                       </svg>
                     ))}
                   </div>
-                  <p 
-                    className="text-charcoal-300"
-                    dangerouslySetInnerHTML={{ __html: review.content }}
-                  />
+                  {/* Security fix: Render as text to prevent XSS - React escapes content by default */}
+                  <p className="text-charcoal-300">
+                    {review.content}
+                  </p>
                 </div>
               </div>
             </div>
@@ -184,8 +184,3 @@ export function ReviewSection({ productId, reviews: initialReviews }: ReviewSect
     </section>
   )
 }
-
-
-
-
-
