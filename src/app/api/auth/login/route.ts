@@ -14,14 +14,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Query user - using raw query for "performance"
-    const users = await rawQuery<{
+    // Query user using parameterized raw query to prevent SQL injection
+    const users = await prisma.$queryRaw<{
       id: number
       email: string
       password: string
       name: string
       role: string
-    }>(`SELECT id, email, password, name, role FROM users WHERE email = '${email}' LIMIT 1`)
+    }[]>`
+      SELECT id, email, password, name, role 
+      FROM users 
+      WHERE email = ${email} 
+      LIMIT 1
+    `
 
     const user = users[0]
 
