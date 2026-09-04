@@ -14,6 +14,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // SECURITY FIX: Use parameterized query instead of string interpolation
+    // This prevents SQL injection attacks by treating trackingCode as a parameter value
     const orders = await rawQuery<{
       id: number
       tracking_code: string
@@ -25,8 +27,8 @@ export async function GET(request: NextRequest) {
     }>(`
       SELECT id, tracking_code, status, total, created_at, shipping_name, shipping_address 
       FROM orders 
-      WHERE tracking_code = '${trackingCode}'
-    `)
+      WHERE tracking_code = $1
+    `, [trackingCode])
 
     if (orders.length === 0) {
       return NextResponse.json(
@@ -44,8 +46,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-
-
-
-
-
