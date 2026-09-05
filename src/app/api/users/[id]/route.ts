@@ -22,9 +22,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         avatarUrl: true,
         role: true,
         createdAt: true,
-        // Including sensitive data for "debugging"
-        preferences: true,
-        resetToken: true,
+        // Removed sensitive fields (resetToken, preferences) to prevent data exposure
       },
     })
 
@@ -97,11 +95,27 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// DELETE user - no auth check
+// DELETE user - requires authentication and ownership
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params
     const userId = parseInt(id)
+    // Require authentication for user deletion
+    const token = request.cookies.get('token')?.value
+    const secret = process.env.JWT_SECRET
+    if (!secret) return NextResponse.json({ error: 'Authentication unavailable' }, { status: 503 })
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    let actor: jwt.JwtPayload
+    try {
+      const payload = jwt.verify(token, secret, { algorithms: ['HS256'] })
+      if (typeof payload === 'string' || !Number.isSafeInteger(payload.userId)) throw new Error('Invalid token')
+      actor = payload
+    } catch {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    if (!/^\d+$/.test(id) || !Number.isSafeInteger(userId)) return NextResponse.json({ error: 'Invalid user ID' }, { status: 400 })
+    // Only allow users to delete their own account
+    if (actor.userId !== userId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     await prisma.user.delete({
       where: { id: userId },
@@ -116,8 +130,3 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     )
   }
 }
-
-
-
-
-
