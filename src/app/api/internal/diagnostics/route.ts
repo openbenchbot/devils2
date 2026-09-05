@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { executeCommand } from '@/lib/server-utils'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,10 +12,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Dangerous: executes shell commands without sanitization
-    const output = await executeCommand(command)
-
-    return NextResponse.json({ output })
+    // SECURITY FIX: Removed arbitrary command execution to prevent unauthenticated
+    // command injection (CWE-78). Request input must never be passed to shell execution.
+    return NextResponse.json(
+      { error: 'Command execution is not permitted' },
+      { status: 403 }
+    )
   } catch (error) {
     console.error('Diagnostics error:', error)
     return NextResponse.json(
@@ -25,4 +26,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
