@@ -12,6 +12,19 @@ const DIAGNOSTIC_OPERATIONS: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   try {
+    // Security fix: authenticate callers before allowing access to diagnostics.
+    // Requires a Bearer token matching the DIAGNOSTICS_ADMIN_TOKEN env var.
+    // This prevents unauthenticated attackers from invoking server-side commands.
+    const authHeader = request.headers.get('authorization')
+    const adminToken = process.env.DIAGNOSTICS_ADMIN_TOKEN
+
+    if (!adminToken || authHeader !== `Bearer ${adminToken}`) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     const { command } = body
 
