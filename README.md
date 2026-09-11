@@ -1,4 +1,4 @@
-# Devil's Advocate.
+# Devil's Advocate
 
 A premium spirits and cocktails e-commerce website built with Next.js 14.
 
