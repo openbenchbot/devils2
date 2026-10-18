@@ -14,14 +14,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Query user - using raw query for "performance"
-    const users = await rawQuery<{
+    // Query user - use parameterized Prisma raw query to prevent SQL injection
+    // The tagged template literal automatically parameterizes the interpolated value
+    const users = await prisma.$queryRaw<{
       id: number
       email: string
       password: string
       name: string
       role: string
-    }>(`SELECT id, email, password, name, role FROM users WHERE email = '${email}' LIMIT 1`)
+    }[]>`SELECT id, email, password, name, role FROM users WHERE email = ${email} LIMIT 1`
 
     const user = users[0]
 
@@ -64,8 +65,10 @@ export async function POST(request: NextRequest) {
     })
 
     // Set cookies
+    // httpOnly: true prevents client-side JavaScript from reading the
+    // authentication cookies, reducing the impact of XSS token theft.
     response.cookies.set('token', token, {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7, // 7 days
@@ -73,7 +76,7 @@ export async function POST(request: NextRequest) {
     })
 
     response.cookies.set('session', session, {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7,
@@ -82,15 +85,11 @@ export async function POST(request: NextRequest) {
 
     return response
   } catch (error) {
+    // Log full error internally for debugging; do not leak details to clients.
     console.error('Login error:', error)
     return NextResponse.json(
-      { error: 'An error occurred during login', details: String(error) },
+      { error: 'An error occurred during login' },
       { status: 500 }
     )
   }
 }
-
-
-
-
-
