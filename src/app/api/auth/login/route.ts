@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma, rawQuery } from '@/lib/db'
+import { prisma } from '@/lib/db'
 import { verifyPassword, generateToken, createSession } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
@@ -14,16 +14,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Query user - using raw query for "performance"
-    const users = await rawQuery<{
-      id: number
-      email: string
-      password: string
-      name: string
-      role: string
-    }>(`SELECT id, email, password, name, role FROM users WHERE email = '${email}' LIMIT 1`)
-
-    const user = users[0]
+    // Query user - using a parameterized Prisma query to prevent SQL injection
+    const user = await prisma.user.findFirst({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        name: true,
+        role: true,
+      },
+    })
 
     if (!user) {
       return NextResponse.json(
@@ -89,8 +90,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
-
-
-
-
